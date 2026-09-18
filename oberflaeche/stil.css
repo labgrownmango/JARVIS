@@ -1,0 +1,1163 @@
+:root {
+  --grund: #0b0e13;
+  --flaeche: #12161f;
+  --flaeche-hell: #1a202c;
+  --rand: #232b3a;
+  --text: #dbe3f0;
+  --text-leise: #7b879b;
+  --blau: #3ba9ff;          /* Arc-Reaktor */
+  --blau-dunkel: #1b4f7a;
+  --gruen: #48c78e;
+  --gelb: #ffcc4d;
+  --rot: #ff6b6b;
+  --schrift: "Segoe UI", system-ui, sans-serif;
+  --mono: "Cascadia Code", "Consolas", monospace;
+}
+
+* { box-sizing: border-box; }
+
+/* --- Bildlaufleisten ---------------------------------------------------- */
+/* Fuer die war nie etwas gesetzt: der Browser malte seine eigenen, und die
+   sind hell - ein weisser Balken quer durch ein dunkles Fenster.
+   Gedanke war, sie ganz wegzunehmen. Dagegen spricht etwas Praktisches:
+   bei dreiundvierzig Nachrichten im Verlauf ist die Leiste das Einzige,
+   woran man sieht, wie weit oben oder unten man ist. Wegnehmen waere
+   huebscher und unbrauchbarer.
+   Also schmal und leise - sichtbar, wenn man hinsieht, und sonst nicht.
+   Auf dem Handy bleiben die waagerechten Leisten weiter ganz aus (siehe
+   unten); dort schiebt man mit dem Finger und braucht keine Anzeige. */
+* {
+  scrollbar-width: thin;                       /* Firefox */
+  scrollbar-color: var(--rand) transparent;
+}
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: var(--rand);
+  border-radius: 6px;
+  /* Der Rand in der Hintergrundfarbe laesst den Balken schlanker wirken,
+     ohne die Trefferflaeche zu verkleinern - anklicken soll man ihn ja. */
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover { background: var(--flaeche-hell); }
+*::-webkit-scrollbar-corner { background: transparent; }
+
+/* Das hidden-Attribut muss sich durchsetzen. Der Browser gibt ihm nur
+   "display: none" mit der Staerke einer Voreinstellung mit - jede eigene
+   Regel wie "#eingabezeile { display: flex }" ueberstimmt es lautlos.
+   Gemessen: beim freien Sprechen stand die Eingabezeile weiter da, obwohl
+   sie als versteckt markiert war. */
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  height: 100vh;
+  display: grid;
+  grid-template-columns: 210px 1fr;
+  background: var(--grund);
+  color: var(--text);
+  font: 14px/1.55 var(--schrift);
+  overflow: hidden;
+}
+
+/* --- Seitenleiste --------------------------------------------------- */
+#leiste {
+  background: var(--flaeche);
+  border-right: 1px solid var(--rand);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 0;
+}
+
+#marke {
+  padding: 0 18px 16px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  font-size: 17px;
+  color: var(--blau);
+}
+#marke small {
+  display: block;
+  letter-spacing: 0;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-leise);
+}
+
+nav button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 18px;
+  border: 0;
+  background: none;
+  color: var(--text-leise);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+}
+nav button:hover { background: var(--flaeche-hell); color: var(--text); }
+nav button.an {
+  color: var(--blau);
+  border-left-color: var(--blau);
+  background: var(--flaeche-hell);
+}
+nav .zahl {
+  margin-left: auto;
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 9px;
+  background: var(--blau-dunkel);
+  color: #cfe9ff;
+}
+
+/* --- Chatliste -------------------------------------------------------- */
+/* Sie steht zwischen Navigation und Fusszeile und nimmt den Platz, der
+   uebrig ist - bei vielen Chats wird in ihr gescrollt, nicht in der
+   ganzen Leiste. */
+#chatliste {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rand);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+#chatkopf {
+  display: flex;
+  align-items: center;
+  padding: 0 18px 6px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-leise);
+}
+
+#chat-neu {
+  margin-left: auto;
+  width: 22px;
+  height: 22px;
+  line-height: 1;
+  border: 1px solid var(--rand);
+  border-radius: 6px;
+  background: none;
+  color: var(--text-leise);
+  font-size: 15px;
+  cursor: pointer;
+}
+#chat-neu:hover { color: var(--blau); border-color: var(--blau); }
+
+#chats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+#chats li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px 0 18px;
+  border-left: 2px solid transparent;
+}
+#chats li:hover { background: var(--flaeche-hell); }
+#chats li.an { border-left-color: var(--blau); background: var(--flaeche-hell); }
+#chats li.an .chatname { color: var(--blau); }
+
+.chatname {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 0;
+  border: 0;
+  background: none;
+  color: var(--text-leise);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  /* Lange Titel duerfen die Leiste nicht auseinanderdruecken */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chatname:hover { color: var(--text); }
+
+.chatzahl { font-size: 10px; color: var(--text-leise); }
+
+/* Die drei Punkte. Vorher stand hier ein "×" - das bot nur das Loeschen an,
+   und Umbenennen ging ausschliesslich per Doppelklick, den niemand errät. */
+.chatmehr {
+  border: 0;
+  background: none;
+  color: var(--text-leise);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 5px;
+  /* Erst beim Ueberfahren sichtbar - sonst sieht die Liste aus wie eine
+     Reihe Knoepfe mit Text daneben. */
+  opacity: 0;
+}
+#chats li:hover .chatmehr,
+.chatmehr[aria-expanded] { opacity: 1; }
+.chatmehr:hover, .chatmehr[aria-expanded] {
+  color: var(--text);
+  background: var(--flaeche);
+}
+
+.chatmenue {
+  flex: 1 0 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 2px 0 6px;
+}
+.chatmenue button {
+  border: 0;
+  background: none;
+  color: var(--text-leise);
+  font: inherit;
+  font-size: 11px;
+  text-align: left;
+  padding: 5px 7px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.chatmenue button:hover { background: var(--flaeche); color: var(--text); }
+.chatmenue .chatgefahr:hover {
+  background: var(--warn, #e8836b);
+  color: var(--flaeche);
+}
+
+/* Rueckfrage und Umbenennen stehen in der Zeile selbst - Browserdialoge
+   lassen sich abschalten, und dann taeten die Knoepfe nichts. */
+.chatfrage {
+  flex: 1 0 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 2px 0 8px;
+  font-size: 11px;
+  color: var(--text-leise);
+}
+.chatfrage button {
+  border: 1px solid var(--rand);
+  border-radius: 6px;
+  background: none;
+  color: var(--text-leise);
+  font: inherit;
+  font-size: 11px;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+.chatja { border-color: var(--warn, #e8836b) !important; color: var(--warn, #e8836b) !important; }
+.chatja:hover { background: var(--warn, #e8836b); color: var(--flaeche) !important; }
+.chatnein:hover { color: var(--text); }
+
+.chatfeld {
+  flex: 1;
+  min-width: 0;
+  background: var(--grund);
+  border: 1px solid var(--blau);
+  border-radius: 5px;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  padding: 4px 6px;
+}
+
+#fuss {
+  padding: 12px 18px 0;
+  font-size: 11px;
+  color: var(--text-leise);
+  border-top: 1px solid var(--rand);
+  line-height: 1.7;
+}
+#fuss b { color: var(--text); font-weight: 500; }
+
+/* --- Bereiche -------------------------------------------------------- */
+main { overflow: hidden; display: flex; flex-direction: column; }
+section { display: none; flex: 1; overflow-y: auto; padding: 22px 26px; }
+section.an { display: flex; flex-direction: column; }
+
+h2 { margin: 0 0 4px; font-size: 16px; font-weight: 600; }
+.unterzeile { color: var(--text-leise); font-size: 12px; margin-bottom: 18px; }
+
+/* --- Chat ------------------------------------------------------------ */
+#chat { padding: 0; }
+#verlauf { flex: 1; overflow-y: auto; padding: 22px 26px; }
+
+.blase { margin-bottom: 16px; max-width: 780px; }
+.blase .wer {
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--text-leise);
+  margin-bottom: 3px;
+}
+/* Was vor diesem Seitenaufruf gesagt wurde, trägt weiterhin die Marke
+   .frueher - aber NICHT mehr gedämpft. Die Dämpfung (opacity: .62) sollte
+   zeigen, was alt ist; sie machte den halben Verlauf schlecht lesbar, und
+   den Schnitt zeigen ohnehin die Datumstrenner und das "jetzt" darunter.
+   Die Marke bleibt als Angriffspunkt stehen, falls doch etwas daran soll. */
+.trenner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 18px 0 14px;
+  color: var(--text-leise);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.trenner::before, .trenner::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--rand, #2a2a2a);
+}
+
+/* Bilder, die Jarvis in seine Antwort setzt. Begrenzt, damit ein grosses
+   Foto nicht den halben Verlauf einnimmt. */
+.chatbild {
+  display: block;
+  max-width: 100%;
+  max-height: 340px;
+  width: auto;
+  margin: 10px 0;
+  border-radius: 8px;
+  border: 1px solid var(--rand, #2a2a2a);
+  background: #111;
+}
+
+/* Bis zu drei Bilder nebeneinander. flex-basis: 0 statt auto - sonst
+   bestimmt die EIGENBREITE des Bildes die Aufteilung, und ein breites Foto
+   neben einem schmalen Diagramm nimmt sich zwei Drittel der Zeile. Mit 0
+   teilen sich alle die Breite gleich, unabhaengig davon, was geladen wird.
+
+   white-space: normal, weil .inhalt auf pre-wrap steht: der Zeilenumbruch
+   zwischen zwei Bildzeilen haette sonst als echtes Leerzeichen zwischen den
+   Bildern gestanden und die Reihe um ein paar Pixel verschoben. */
+.bildreihe {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 10px 0;
+  white-space: normal;
+}
+.bildreihe > .chatbild {
+  flex: 1 1 0;
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+  object-fit: cover;
+}
+/* Ein einzelnes Bild soll nicht auf volle Breite gezogen werden - sonst
+   wirkt ein kleines Wappen wie ein Werbebanner. */
+.bildreihe > .chatbild:only-child {
+  flex: 0 1 auto;
+  width: auto;
+  object-fit: contain;
+}
+.bildfehler { color: var(--text-leise); font-size: 13px; font-style: italic; }
+
+/* Fremder Text - eine Mail, eine Nachricht, etwas vom Bildschirm. Er ist
+   NICHT durch das Modell gegangen und steht nicht im Verlauf. Die
+   Absetzung ist kein Schmuck: man soll auf einen Blick sehen, wo fremder
+   Text anfaengt und wo er aufhoert. Steht darin "ignoriere deine Regeln",
+   ist sofort klar, wer das geschrieben hat - und wer nicht. */
+/* Der zweite Speichern-Knopf, unter der Einstellungsliste, mit dem Stand
+   daneben. Der erste sitzt oben und ist beim Ausfuellen laengst aus dem
+   Bild - so ist ein Mailzugang zweimal verlorengegangen. */
+#envfuss {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 14px 0 6px;
+  position: sticky;
+  bottom: 0;
+  padding: 8px 0;
+  background: linear-gradient(to top,
+              var(--grund, #0d1117) 60%, transparent);
+}
+#env-stand { font-size: 12px; color: var(--text-leise); }
+#env-stand.warnung { color: var(--warn, #e8836b); font-weight: 600; }
+
+.fremdtext {
+  margin: 10px 0;
+  border: 1px solid var(--rand, #2a2a2a);
+  border-left: 3px solid var(--blau);
+  border-radius: 8px;
+  background: var(--flaeche, #141a21);
+  padding: 9px 12px 7px;
+}
+.fremdkopf {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--blau);
+  margin-bottom: 5px;
+}
+.fremdkoerper {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-size: 13.5px;
+  line-height: 1.5;
+  max-height: 420px;
+  overflow-y: auto;
+}
+.fremdfuss {
+  margin-top: 6px;
+  font-size: 10.5px;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  color: var(--text-leise);
+}
+
+.blase.du .wer { color: var(--gruen); }
+.blase.jarvis .wer { color: var(--blau); }
+.blase .inhalt { white-space: pre-wrap; word-wrap: break-word; }
+.blase.system .inhalt { color: var(--text-leise); font-style: italic; }
+.blase.fehler .inhalt { color: var(--rot); }
+
+/* --- Modusumschalter -------------------------------------------------- */
+#moduszeile {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 26px;
+  border-bottom: 1px solid var(--rand);
+  background: var(--flaeche);
+}
+button.modus {
+  padding: 5px 13px;
+  border: 1px solid var(--rand);
+  border-radius: 20px;
+  background: none;
+  color: var(--text-leise);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+button.modus:hover { color: var(--text); }
+button.modus.an {
+  color: var(--blau);
+  border-color: var(--blau-dunkel);
+  background: #0f2438;
+}
+#modushinweis { margin-left: 12px; font-size: 11px; color: var(--text-leise); }
+
+/* --- Drei Striche ----------------------------------------------------- */
+#striche {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+}
+#striche[hidden] { display: none; }
+#stricheSvg { width: min(60%, 420px); height: auto; }
+.strich {
+  stroke: var(--blau);
+  stroke-width: 15;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 9px rgba(59,169,255,.55));
+  transition: stroke .3s;
+}
+#striche.ruht .strich { stroke: #2c4258; filter: none; }
+#striche.hoert .strich { stroke: var(--gruen); filter: drop-shadow(0 0 9px rgba(72,199,142,.5)); }
+#strichetext { font-size: 12px; color: var(--text-leise); letter-spacing: 2px; text-transform: uppercase; }
+
+/* --- Mikrofon und Anhänge --------------------------------------------- */
+button.rund {
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  border: 1px solid var(--rand);
+  border-radius: 50%;
+  background: none;
+  color: var(--text-leise);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+button.rund:hover { color: var(--text); border-color: var(--text-leise); }
+button.rund.laeuft {
+  color: #fff; background: #a83232; border-color: #a83232;
+  animation: pulsen 1.2s ease-in-out infinite;
+}
+@keyframes pulsen { 50% { box-shadow: 0 0 0 7px rgba(168,50,50,.22); } }
+
+#anhaenge { display: flex; gap: 8px; padding: 0 26px; flex-wrap: wrap; }
+#anhaenge:empty { display: none; }
+#anhaenge .anhang {
+  position: relative; width: 74px; height: 54px;
+  border: 1px solid var(--rand); border-radius: 6px; overflow: hidden;
+}
+#anhaenge .anhang img { width: 100%; height: 100%; object-fit: cover; }
+#anhaenge .anhang button {
+  position: absolute; top: 1px; right: 1px;
+  width: 17px; height: 17px; line-height: 1;
+  border: 0; border-radius: 50%;
+  background: rgba(0,0,0,.72); color: #fff; cursor: pointer; font-size: 12px;
+}
+
+/* --- Die Leiste unter der Antwort ------------------------------------- */
+/* Vorlesen, Kopieren, Quellen - dort, wo man sie sucht, wenn man die
+   Antwort gerade zu Ende gelesen hat. Der Lautsprecher sass frueher oben
+   an der Sprecherzeile; dorthin schaut niemand, wenn er fertig ist. */
+.antwortfuss {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 8px;
+}
+
+.fussknopf {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: none;
+  padding: 5px 7px;
+  border-radius: 6px;
+  color: var(--text-leise);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1;
+}
+.fussknopf:hover { color: var(--blau); background: var(--blase-hover, rgba(127,127,127,.12)); }
+.fussknopf.laeuft { color: var(--blau); }
+.fussknopf.geschafft { color: var(--gruen, #4caf50); }
+.fussknopf svg { flex: 0 0 auto; }
+.blase img.bild {
+  max-width: 260px; border-radius: 7px; margin-top: 7px;
+  border: 1px solid var(--rand); display: block;
+}
+
+/* --- Quellen ---------------------------------------------------------- */
+/* Die Zeichen sind gezeichnet, nicht geladen: ein echtes Favicon waere ein
+   Web-Download pro Quelle, und die Seiten erfuehren nebenbei, wonach hier
+   gefragt wurde. */
+/* Gestapelt, wie man es von anderen Diensten kennt: jedes Schild liegt ein
+   Stueck auf dem vorigen. Der Rand in der Hintergrundfarbe trennt sie
+   optisch, sonst verschwimmen sie zu einem Fleck. */
+.quellvorschau {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+}
+.quellvorschau .quellzeichen + .quellzeichen { margin-left: -5px; }
+.quellvorschau .quellzeichen {
+  box-shadow: 0 0 0 1.5px var(--blase-bg, var(--hintergrund, #10151c));
+}
+
+.quellrest {
+  margin-left: 4px;
+  font-size: 11px;
+  color: var(--text-leise);
+}
+
+.quellzeichen {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.quellzeichen svg { width: 100%; height: 100%; }
+
+/* Der Anfangsbuchstabe auf farbigem Grund. Er ist die Rueckfallebene: er
+   steht sofort da, und wenn das echte Favicon der Seite ankommt, legt es
+   sich darueber. Kommt keins, bleibt der Buchstabe - kein Loch, kein
+   Zappeln, weil beide dieselbe Flaeche belegen. */
+.quellzeichen.buchstabe {
+  position: relative;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+}
+.quellzeichen .initiale {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+.quellfavicon {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  /* Erst sichtbar, wenn es wirklich geladen ist - sonst blitzt kurz ein
+     kaputtes Bild ueber dem Buchstaben auf. */
+  opacity: 0;
+}
+.quellzeichen.hatzeichen { background: #fff !important; }
+.quellzeichen.hatzeichen .initiale { visibility: hidden; }
+.quellzeichen.hatzeichen .quellfavicon { opacity: 1; }
+.quellzeichen.wiki { color: var(--text); }
+
+/* Seiten mit eigenem Zeichen - Instagram, YouTube, GitHub und die anderen
+   aus SEITENZEICHEN. Die Grundfarbe setzt das Skript, sie gehoert zur
+   jeweiligen Seite. Auch diese Zeichen sind gezeichnet und nicht geholt:
+   ein echtes Favicon waere ein Web-Download je Quelle, und die Seite
+   erfuehre nebenbei, dass hier nach ihr gefragt wurde. */
+.quellzeichen.gezeichnet { padding: 0; }
+.quellzeichen.gezeichnet svg { width: 100%; height: 100%; display: block; }
+
+.quellenliste {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 8px 10px;
+  border: 1px solid var(--rand);
+  border-radius: 8px;
+  font-size: 12.5px;
+}
+.quellenliste li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 0;
+  min-width: 0;
+}
+.quellenliste a {
+  color: var(--blau);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.quellenliste a:hover { text-decoration: underline; }
+.quellort {
+  color: var(--text-leise);
+  font-size: 11.5px;
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding-left: 8px;
+}
+
+/* --- Arc-Reaktor: "Jarvis denkt" ------------------------------------- */
+/* Er steht in einer eigenen Blase an der Stelle, an der gleich die Antwort
+   steht - frueher stand der Hinweis unten am Rand, und der Blick musste
+   zwischen zwei Ecken hin und her. */
+.blase.denken .inhalt {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--blau);
+  font-size: 13px;
+}
+
+.arc { flex: 0 0 auto; overflow: visible; }
+
+/* Aussenring: ruhig, nur ein schwacher Puls */
+.arc-huelle {
+  fill: none;
+  stroke: var(--blau-dunkel, #1b4a6b);
+  stroke-width: 2;
+  opacity: .55;
+}
+
+/* Die acht Spulen drehen sich - das ist die eigentliche Bewegung */
+.arc-spulen {
+  transform-origin: 20px 20px;
+  animation: arc-dreh 3.4s linear infinite;
+}
+.arc-spule { fill: var(--blau); opacity: .75; }
+
+.arc-ring {
+  fill: none;
+  stroke: var(--blau);
+  stroke-width: 1.5;
+  opacity: .8;
+}
+
+/* Der Kern atmet. Zwei verschiedene Takte, damit es nicht im Gleichschritt
+   pocht - das wirkt sonst mechanisch statt lebendig. */
+.arc-kern {
+  fill: var(--blau);
+  transform-origin: 20px 20px;
+  animation: arc-puls 1.9s ease-in-out infinite;
+}
+
+@keyframes arc-dreh {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes arc-puls {
+  0%, 100% { opacity: .55; transform: scale(.86); }
+  50%      { opacity: 1;   transform: scale(1.06); }
+}
+
+/* Wer Bewegung im System abgeschaltet hat, bekommt einen ruhenden Reaktor.
+   Die Anzeige funktioniert weiter - sie dreht sich nur nicht. */
+@media (prefers-reduced-motion: reduce) {
+  .arc-spulen, .arc-kern { animation: none; }
+  .arc-kern { opacity: .9; }
+}
+
+/* --- Freies Sprechen: was verstanden wurde --------------------------- */
+#gehoertes {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 26px 20px;
+  border-top: 1px solid var(--rand);
+  min-height: 26px;
+}
+#gehoertlage {
+  font-size: 11px;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  color: var(--text-leise);
+  white-space: nowrap;
+}
+#gehoerttext {
+  flex: 1;
+  font-size: 15px;
+  color: var(--text);
+  min-width: 0;
+}
+#gehoertes.lage-hoert #gehoertlage { color: var(--blau); }
+#gehoertes.lage-nichts #gehoertlage { color: var(--warn, #e8836b); }
+#gehoert-zurueck { flex-shrink: 0; }
+
+@media (max-width: 760px) {
+  #gehoertes { padding: 12px 14px 16px; gap: 8px; flex-wrap: wrap; }
+  #gehoerttext { flex-basis: 100%; }
+}
+
+/* --- Hört der Rechner? ------------------------------------------------ */
+#ohrzeile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 26px 8px;
+  font-size: 11px;
+  color: var(--text-leise);
+  border-bottom: 1px solid var(--rand);
+}
+#ohrwort { color: var(--blau); white-space: nowrap; }
+#ohrgeraet {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
+}
+
+.pegel {
+  position: relative;
+  flex: 1;
+  max-width: 170px;
+  height: 6px;
+  background: var(--flaeche-hell);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.pegel > div { height: 100%; border-radius: 3px; }
+
+#pegelbalken {
+  width: 0;
+  background: var(--blau);
+  /* Kurz genug, um beim Sprechen mitzugehen, lang genug um nicht zu flackern */
+  transition: width .12s linear;
+}
+#pegelbalken.still { background: var(--rand); }
+
+.pegel.naehe { overflow: visible; }
+#naehebalken {
+  width: 0;
+  background: #4a7ea8;
+  transition: width .12s linear;
+}
+#naehebalken.nah { background: #6ad39a; }
+
+/* Die Schwelle als Strich: man sieht, wie weit es noch fehlt */
+#naeheschwelle {
+  position: absolute;
+  top: -2px;
+  width: 1px;
+  height: 10px;
+  background: var(--text-leise);
+  opacity: .7;
+}
+
+#ohrzeile.erkannt { background: rgba(106, 211, 154, .12); }
+
+@media (max-width: 760px) {
+  #ohrzeile { padding: 6px 14px 8px; gap: 7px; }
+  #ohrgeraet { display: none; }     /* auf dem Handy kostet das nur Platz */
+}
+
+/* Ein Modus, den dieser Browser nicht kann - sichtbar, aber gedämpft. Er
+   wird nicht ausgeblendet: dann fragte man sich, wo er hin ist. */
+button.modus.geht-nicht {
+  opacity: .45;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+#modushinweis.warnung { color: var(--warn, #e8836b); }
+
+/* --- Markdown in den Antworten --------------------------------------- */
+/* Zurückhaltend: eine Antwort ist kein Dokument. Überschriften bleiben klein,
+   Abstände eng - sonst reißt eine dreizeilige Auskunft das halbe Fenster auf. */
+.mdabsatz { margin: 0 0 8px; }
+.mdabsatz:last-child { margin-bottom: 0; }
+
+.mdueber {
+  margin: 12px 0 5px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: .2px;
+}
+.blase .inhalt > .mdueber:first-child { margin-top: 0; }
+
+.mdliste { margin: 0 0 8px; padding-left: 20px; }
+.mdliste li { margin: 2px 0; }
+
+.mdzitat {
+  margin: 0 0 8px;
+  padding: 2px 0 2px 11px;
+  border-left: 2px solid var(--rand);
+  color: var(--text-leise);
+}
+
+.blase .inhalt code {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+  background: rgba(20, 45, 70, .5);
+  border: 1px solid var(--rand);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+
+.mdcode {
+  margin: 0 0 9px;
+  padding: 10px 12px;
+  background: #12161c;
+  border: 1px solid var(--rand);
+  border-radius: 7px;
+  overflow-x: auto;      /* langer Code scrollt, statt die Seite zu dehnen */
+}
+.mdcode code {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre;
+}
+
+.blase .inhalt a { color: var(--blau); }
+
+.mdtabellerahmen { overflow-x: auto; margin: 0 0 9px; }
+.mdtabelle { border-collapse: collapse; font-size: 12.5px; }
+.mdtabelle th, .mdtabelle td {
+  border: 1px solid var(--rand);
+  padding: 4px 9px;
+  text-align: left;
+  vertical-align: top;
+}
+.mdtabelle th { background: var(--flaeche-hell); font-weight: 600; }
+
+.blase .inhalt hr {
+  border: 0;
+  border-top: 1px solid var(--rand);
+  margin: 10px 0;
+}
+
+/* --- "Jarvis hat gedacht": der aufklappbare Gedankengang ------------- */
+/* Er bleibt stehen, nachdem die Antwort da ist - zugeklappt eine Zeile,
+   aufgeklappt der Weg, den das Modell genommen hat. Kein Reaktor mehr:
+   es dreht sich nichts, es ist ja vorbei. */
+.blase.gedacht { margin-bottom: 10px; }
+
+.gedachtkopf {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: none;
+  padding: 2px 0;
+  color: var(--text-leise);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.gedachtkopf:hover { color: var(--blau); }
+.gedachtpfeil { font-size: 10px; width: 9px; }
+
+/* Gab es nichts zu denken, steht die Zeile trotzdem da - aber leiser.
+   Sie soll zeigen, dass die Anzeige funktioniert, nicht um Aufmerksamkeit
+   bitten. */
+.blase.gedacht.still .gedachtkopf { opacity: .42; }
+.blase.gedacht.still .gedachtkopf:hover { opacity: 1; }
+
+.gedachtkoerper {
+  margin-top: 6px;
+  padding: 10px 12px;
+  border-left: 2px solid var(--blau-dunkel, #1b4a6b);
+  background: rgba(20, 45, 70, .35);
+  border-radius: 0 7px 7px 0;
+  max-width: 780px;
+}
+
+.gedanke {
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-leise);
+}
+.gedanke:last-child { margin-bottom: 0; }
+
+.werkzeugzeile {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 9px;
+}
+
+/* Werkzeuge und Variablen heben sich ab - das ist die Stelle, an der aus
+   Ueberlegung eine Handlung wird, und fuer wen das lesbar ist, steht dort
+   die eigentliche Auskunft. */
+.werkzeug {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 11.5px;
+  font-style: italic;
+  font-weight: 700;
+  color: #7fc4ff;
+  background: #10314d;
+  border: 1px solid #1d4f79;
+  border-radius: 5px;
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+
+#status {
+  padding: 0 26px 6px;
+  font-size: 12px;
+  color: var(--blau);
+  min-height: 20px;
+}
+#status.leer { visibility: hidden; }
+
+#eingabezeile {
+  display: flex;
+  gap: 10px;
+  padding: 14px 26px 18px;
+  border-top: 1px solid var(--rand);
+  background: var(--flaeche);
+}
+#eingabe {
+  flex: 1;
+  resize: none;
+  padding: 10px 12px;
+  border: 1px solid var(--rand);
+  border-radius: 7px;
+  background: var(--grund);
+  color: var(--text);
+  font: inherit;
+  min-height: 42px;
+  max-height: 160px;
+}
+#eingabe:focus { outline: 0; border-color: var(--blau-dunkel); }
+
+button.tat {
+  padding: 9px 16px;
+  border: 1px solid var(--blau-dunkel);
+  border-radius: 7px;
+  background: var(--blau-dunkel);
+  color: #eaf6ff;
+  font: inherit;
+  cursor: pointer;
+}
+button.tat:hover { background: #26608f; }
+button.tat.leise { background: none; color: var(--text-leise); border-color: var(--rand); }
+button.tat.leise:hover { color: var(--text); border-color: var(--text-leise); }
+button.tat.gefahr { border-color: #6b2b2b; color: var(--rot); background: none; }
+button.tat:disabled { opacity: .4; cursor: default; }
+
+/* --- Karten ---------------------------------------------------------- */
+.karte {
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  border-radius: 9px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+.karte .kopf {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.karte .kopf b { font-weight: 600; }
+.karte .kopf .rechts { margin-left: auto; display: flex; gap: 8px; }
+
+.marke {
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 9px;
+  border: 1px solid var(--rand);
+  color: var(--text-leise);
+}
+.marke.gruen { color: var(--gruen); border-color: #235c43; }
+.marke.gelb { color: var(--gelb); border-color: #6b5a23; }
+.marke.rot { color: var(--rot); border-color: #6b2b2b; }
+.marke.blau { color: var(--blau); border-color: var(--blau-dunkel); }
+
+label.feld { display: block; margin-bottom: 12px; }
+label.feld .name { font-size: 12px; color: var(--text-leise); display: block; margin-bottom: 3px; }
+label.feld .name b { color: var(--text); font-family: var(--mono); font-weight: 500; }
+
+input[type=text], textarea, select {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--rand);
+  border-radius: 6px;
+  background: var(--grund);
+  color: var(--text);
+  font: 13px var(--mono);
+}
+input:focus, textarea:focus, select:focus { outline: 0; border-color: var(--blau-dunkel); }
+textarea { font-family: var(--schrift); resize: vertical; }
+
+.schalter { display: flex; align-items: center; gap: 7px; cursor: pointer; font-size: 12px; }
+.schalter input { accent-color: var(--blau); width: 15px; height: 15px; }
+
+.raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+
+/* --- Protokoll ------------------------------------------------------- */
+#protokollliste { font-family: var(--mono); font-size: 12px; }
+.zeile { display: flex; gap: 10px; padding: 3px 0; border-bottom: 1px solid #171d28; }
+.zeile .zeit { color: #4a5567; flex-shrink: 0; }
+.zeile .art { width: 72px; flex-shrink: 0; }
+.zeile .inhalt { word-break: break-word; }
+.art-du { color: var(--gruen); }
+.art-jarvis { color: var(--blau); }
+.art-werkzeug { color: var(--gelb); }
+.art-agent { color: #c792ea; }
+.art-fehler { color: var(--rot); }
+.art-modell, .art-system { color: var(--text-leise); }
+
+.leerhinweis { color: var(--text-leise); font-size: 13px; padding: 20px 0; }
+.werkzeugliste .parameter { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--rand); }
+.werkzeugliste .parameter .feld { margin-bottom: 8px; }
+code { font-family: var(--mono); color: var(--blau); }
+
+/* --- Rueckfragen ------------------------------------------------------ */
+#rueckfragen { padding: 16px 26px 0; }
+#rueckfragen:empty { display: none; }
+.karte.frage { border-color: var(--blau-dunkel); background: #101a25; }
+.karte.frage.freigabe { border-color: #6b2b2b; background: #1c1113; }
+.karte.frage .text { font-size: 14px; }
+.karte.frage .folgen {
+  margin-top: 7px; font-size: 12px; color: var(--gelb);
+  border-left: 2px solid #6b5a23; padding-left: 9px;
+}
+.karte.frage .rest { font-variant-numeric: tabular-nums; }
+
+/* --- Schmale Bildschirme (Handy) ------------------------------------
+   Die Seitenleiste ist fest 210 px breit. Auf einem iPhone mit 390 px
+   blieben fuer den Chat 180 px - unbenutzbar. Unter 760 px wird deshalb
+   gestapelt: Navigation als schmale Zeile oben, darunter der volle Platz
+   fuer das Gespraech. */
+@media (max-width: 760px) {
+  body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    height: 100dvh;              /* dvh: Safaris Adressleiste zaehlt mit */
+  }
+
+  #leiste {
+    border-right: 0;
+    border-bottom: 1px solid var(--rand);
+    padding: 8px 0 0;
+    flex-direction: column;
+  }
+  #marke { padding: 0 14px 8px; font-size: 15px; }
+  #marke small { display: none; }
+  #fuss { display: none; }        /* Fusszeile kostet nur Hoehe */
+
+  /* Am Handy liegt die Leiste quer. Die Chatliste wird deshalb zu einem
+     schmalen Streifen, durch den man seitlich wischt - untereinander
+     wuerde sie den halben Bildschirm fressen. */
+  #chatliste {
+    margin-top: 6px;
+    padding-top: 6px;
+    flex: 0 0 auto;
+  }
+  #chatkopf { padding: 0 14px 4px; }
+  #chats {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    padding: 0 8px 4px;
+    gap: 6px;
+  }
+  #chats::-webkit-scrollbar { display: none; }
+  #chats li {
+    flex: 0 0 auto;
+    max-width: 46vw;
+    padding: 0 8px;
+    border-left: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 7px;
+    background: var(--flaeche-hell);
+  }
+  #chats li.an { border-left: 0; border-bottom-color: var(--blau); }
+  .chatname { font-size: 12px; padding: 6px 0; }
+  /* Kein Ueberfahren mit dem Finger - die drei Punkte muessen sichtbar sein */
+  .chatmehr { opacity: 1; padding: 6px 4px; }
+
+  #leiste nav {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  #leiste nav::-webkit-scrollbar { display: none; }
+  nav button {
+    width: auto;
+    white-space: nowrap;
+    padding: 8px 13px;
+    border-left: 0;
+    border-bottom: 2px solid transparent;
+  }
+  nav button.an { border-left: 0; border-bottom-color: var(--blau); }
+
+  section { padding: 14px 14px; }
+  #verlauf { padding: 14px; }
+  .blase { max-width: 100%; }
+
+  /* Auf dem Handy tippt man mit dem Daumen - die Ziele duerfen nicht
+     winzig sein. Und 16px Schrift verhindert, dass Safari beim
+     Antippen des Eingabefelds die ganze Seite heranzoomt. */
+  #moduszeile { padding: 9px 14px; flex-wrap: wrap; gap: 5px; }
+  #modushinweis { display: none; }
+  #eingabezeile { padding: 10px 12px 14px; gap: 7px; }
+  #eingabe { font-size: 16px; }
+  button.rund { width: 44px; height: 44px; }
+  button.tat { padding: 11px 14px; }
+  #stricheSvg { width: 88%; }
+  .chatbild { max-height: 240px; }
+  /* Drei Bilder nebeneinander sind auf dem Handy drei Briefmarken.
+     Untereinander bleibt jedes lesbar. */
+  .bildreihe { flex-wrap: wrap; }
+  .bildreihe > .chatbild { flex: 1 1 100%; max-height: 200px; }
+}

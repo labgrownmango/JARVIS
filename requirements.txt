@@ -1,0 +1,50 @@
+# Alles, was Jarvis braucht.
+#
+# Diese Liste war lange unvollstaendig: auf dem Entwicklungsrechner wurde
+# von Hand nachinstalliert, ohne sie nachzuziehen. Auf einem frischen
+# Rechner scheiterte der Start dann an "No module named 'fastapi'" - und
+# danach an den naechsten zehn. Ermittelt wurde sie, indem ALLE Importe im
+# Code eingesammelt und gegen die Standardbibliothek gefiltert wurden.
+#
+# Wer etwas hinzufuegt: bitte hier eintragen. Der Test dafuer heisst
+# paketetest.py und meldet sich, wenn es jemand vergisst.
+
+# --- Kern: ohne das laeuft gar nichts ---------------------------------------
+openai>=1.40
+python-dotenv>=1.0
+psutil>=5.9
+httpx>=0.27                 # Standort, Wetter, Nachrichten, Einbettungen
+
+# --- Weboberflaeche ---------------------------------------------------------
+fastapi>=0.115
+uvicorn>=0.30
+
+# --- Sprachausgabe ----------------------------------------------------------
+# Piper = neuronale Stimme, pywin32 = Windows-SAPI als Notnagel
+piper-tts>=1.8
+pywin32>=306
+
+# --- Spracheingabe ----------------------------------------------------------
+sounddevice>=0.4.6
+numpy>=1.24
+faster-whisper>=1.0
+openwakeword>=0.6           # "Hey Jarvis"
+
+# --- Bildschirm, Regler, Taskleiste -----------------------------------------
+mss>=9.0                    # Bildschirmfoto
+Pillow>=10.0                # Bild verkleinern und kodieren
+pycaw>=20240210             # Lautstaerke ueber die Windows-Schnittstelle
+comtypes>=1.4               # von pycaw gebraucht, aber auch direkt benutzt
+monitorcontrol>=3.1         # Helligkeit externer Monitore ueber DDC/CI
+pystray>=0.19               # Symbol in der Taskleiste
+
+# --- Suchen und Lesen -------------------------------------------------------
+ddgs>=9.0                   # Internetsuche
+libzim>=3.4                 # Wikipedia von der Platte
+playwright==1.62.0          # der ferngesteuerte Browser (Edge, kein Download)
+
+# --- Windows-Benachrichtigungen ---------------------------------------------
+winsdk>=1.0.0b10            # liest, was Windows an Meldungen zeigt
+
+# --- Zeitzonen --------------------------------------------------------------
+tzdata

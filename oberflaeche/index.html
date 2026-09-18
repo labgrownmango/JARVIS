@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JARVIS</title>
+  <link rel="stylesheet" href="/stil.css">
+</head>
+<body>
+
+<aside id="leiste">
+  <div id="marke">JARVIS<small>Mark I Interface</small></div>
+  <nav>
+    <button data-bereich="chat" class="an">Chat</button>
+    <button data-bereich="agenten">Agenten <span class="zahl" id="zahl-agenten">0</span></button>
+    <button data-bereich="werkzeuge">Werkzeuge <span class="zahl" id="zahl-werkzeuge">0</span></button>
+    <button data-bereich="einstellungen">Einstellungen</button>
+    <button data-bereich="protokoll">Protokoll <span class="zahl" id="zahl-protokoll">0</span></button>
+  </nav>
+  <div id="chatliste">
+    <div id="chatkopf">
+      <span>Chats</span>
+      <button id="chat-neu" title="Neuer Chat - das alte bleibt">+</button>
+    </div>
+    <ul id="chats"></ul>
+  </div>
+  <div id="fuss">
+    Modell <b id="fuss-modell">…</b><br>
+    Verlauf <b id="fuss-verlauf">0</b> Nachrichten<br>
+    Speicher <b id="fuss-speicher">0</b> MB
+  </div>
+</aside>
+
+<main>
+  <!-- Chat -->
+  <section id="bereich-chat" class="an">
+    <div id="moduszeile">
+      <button class="modus an" data-modus="text">Text</button>
+      <button class="modus" data-modus="mischung">Stimme</button>
+      <button class="modus" data-modus="frei">Freies Sprechen</button>
+      <span id="modushinweis">Antworten stehen da; der Lautsprecher liest vor.</span>
+    </div>
+
+    <!-- Hört der Rechner wirklich? "Weckwort bereit" ist eine Behauptung,
+         ein zappelnder Balken ist eine Auskunft. -->
+    <div id="ohrzeile" hidden>
+      <span id="ohrwort">Hey Jarvis</span>
+      <div class="pegel" title="Was gerade am Mikrofon ankommt">
+        <div id="pegelbalken"></div>
+      </div>
+      <div class="pegel naehe" title="Wie nah das Weckwort gerade war">
+        <div id="naehebalken"></div>
+        <div id="naeheschwelle"></div>
+      </div>
+      <span id="ohrgeraet"></span>
+    </div>
+
+    <div id="rueckfragen"></div>
+    <div id="verlauf"></div>
+
+    <!-- Drei Striche: reagieren auf die Frequenzen der Stimme -->
+    <div id="striche" hidden>
+      <svg viewBox="0 0 300 220" id="stricheSvg">
+        <g id="strichgruppe">
+          <line class="strich" id="strich0" x1="60"  y1="110" x2="60"  y2="110"/>
+          <line class="strich" id="strich1" x1="150" y1="110" x2="150" y2="110"/>
+          <line class="strich" id="strich2" x1="240" y1="110" x2="240" y2="110"/>
+        </g>
+      </svg>
+      <div id="strichetext">bereit</div>
+    </div>
+
+    <div id="status" class="leer"></div>
+
+    <!-- Beim freien Sprechen steht hier, was verstanden wurde - statt einer
+         Eingabezeile, in die ohnehin niemand tippt. -->
+    <div id="gehoertes" hidden class="lage-wartet">
+      <span id="gehoertlage">bereit - sprich einfach</span>
+      <span id="gehoerttext"></span>
+      <!-- Das Mikrofon muss auch hier erreichbar sein: die Eingabezeile ist
+           in diesem Modus weg, und mit ihr war der einzige Knopf weg, mit
+           dem man das Zuhören von Hand anstoßen kann. -->
+      <button class="rund" id="mikro-frei" title="Zuhören starten">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <rect x="9" y="2" width="6" height="11" rx="3"/>
+          <path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v4"/>
+        </svg>
+      </button>
+      <button class="tat leise" id="gehoert-zurueck">Tippen</button>
+    </div>
+
+    <div id="anhaenge"></div>
+    <div id="eingabezeile">
+      <textarea id="eingabe" rows="1"
+                placeholder="Frag Jarvis etwas –  Enter sendet, Shift+Enter neue Zeile, Bild einfügen mit Strg+V"></textarea>
+      <button class="rund" id="mikro" title="Sprechen (lokal erkannt)">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <rect x="9" y="2" width="6" height="11" rx="3"/>
+          <path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v4"/>
+        </svg>
+      </button>
+      <button class="tat" id="senden">Senden</button>
+      <button class="tat leise" id="stopp" disabled>Stopp</button>
+      <button class="tat leise" id="leeren">Neu</button>
+    </div>
+  </section>
+
+  <!-- Agenten -->
+  <section id="bereich-agenten">
+    <h2>Hangar</h2>
+    <div class="unterzeile" id="agenten-kopf">…</div>
+    <div class="karte">
+      <div class="kopf"><b>Neuen Anzug losschicken</b></div>
+      <textarea id="agent-aufgabe" rows="2"
+                placeholder="Was soll er erledigen? Er arbeitet allein und meldet sich mit einem Bericht."></textarea>
+      <div style="margin-top:10px"><button class="tat" id="agent-start">Starten</button></div>
+    </div>
+    <div id="agentenliste"></div>
+  </section>
+
+  <!-- Werkzeuge -->
+  <section id="bereich-werkzeuge">
+    <h2>Werkzeuge</h2>
+    <div class="unterzeile">
+      Die Beschreibung entscheidet, wann das Modell ein Werkzeug wählt – sie zu
+      ändern ändert das Verhalten, ohne eine Zeile Code. Abgeschaltete Werkzeuge
+      sieht das Modell gar nicht.
+    </div>
+    <div style="margin-bottom:14px; display:flex; gap:8px">
+      <button class="tat" id="werkzeuge-speichern">Speichern</button>
+      <button class="tat leise" id="werkzeuge-zurueck">Alles zurücksetzen</button>
+    </div>
+    <div id="werkzeugliste" class="werkzeugliste"></div>
+  </section>
+
+  <!-- Einstellungen -->
+  <section id="bereich-einstellungen">
+    <h2>Einstellungen</h2>
+    <div class="unterzeile">
+      Das ist die <code>.env</code>. Die meisten Werte greifen erst nach einem
+      Neustart von Jarvis.
+    </div>
+    <div class="karte" id="modellkarte">
+      <div class="kopf"><b>Modelle</b>
+        <span class="rechts">
+          <button class="tat leise" id="modelle-pingen">Neu anpingen</button>
+        </span>
+      </div>
+      <div id="modelltabelle"></div>
+    </div>
+    <div class="karte">
+      <div class="kopf"><b>Wann Jarvis von selbst spricht</b></div>
+      <div style="font-size:12px;color:var(--text-leise);margin-bottom:10px"
+           id="wachhund-regeln-kopf">…</div>
+      <div id="wachhundliste"></div>
+    </div>
+    <div style="margin-bottom:14px"><button class="tat" id="env-speichern">Speichern</button></div>
+    <div id="envliste"></div>
+    <!-- Der zweite Knopf ist kein Schmuck. Der erste steht ÜBER der Liste;
+         wer unten ein Feld ausfüllt, sieht ihn nicht mehr. Genau so ist ein
+         Mailzugang zweimal verlorengegangen: eingetragen, nie abgeschickt. -->
+    <div id="envfuss">
+      <button class="tat" id="env-speichern-unten">Speichern</button>
+      <span id="env-stand"></span>
+    </div>
+  </section>
+
+  <!-- Protokoll -->
+  <section id="bereich-protokoll">
+    <h2>Protokoll der Sitzung</h2>
+    <div class="unterzeile">
+      Was Jarvis getan hat, in der Reihenfolge. Liegt nur im Arbeitsspeicher und
+      ist nach dem Beenden weg.
+    </div>
+    <div style="margin-bottom:14px"><button class="tat leise" id="protokoll-leeren">Leeren</button></div>
+    <div id="protokollliste"></div>
+  </section>
+</main>
+
+<script src="/stimme.js"></script>
+<script src="/jarvis.js"></script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+PAKET 17. Stand: 35 von 35 der netzunabhaengigen Tests gruen (303 s). Die volle Reihe konnte NICHT durchlaufen - siehe Abschnitt 3.
+
+  oberflaeche/jarvis.js
+      formelnLesbar() NEU, Abfragekette statt Takt
+      97169 Bytes, sha256 6cf672d706c7
+  jarvis/config.py
+      Formeln in normaler Schreibweise
+      66720 Bytes, sha256 cd432a8262e6
+  mdtest.py
+      haelt die Formelumrechnung fest
+      6710 Bytes, sha256 4e7c0a4548f2
+
+================================================================
+1. LATEX STAND ROH IM FENSTER
+================================================================
+
+Gemeldet, so stand es da:
+
+    Dann nutzt du die Formel
+    \[
+    A = \pi \times r^{{2}}
+    \]
+    ... multipliziere mit \(\pi\) (≈ 3,14159).
+
+Eine Formelbibliothek (KaTeX, MathJax) waere der uebliche Weg und kommt
+nicht in Frage: fremdes Skript, und die Sicherheitsrichtlinie laesst nur
+eigene zu. Mitliefern waere ein halbes Megabyte fuer eine Formel im Monat.
+
+Also UMRECHNEN statt darstellen. In einem Chatfenster ist "A = π × r²"
+ohnehin besser lesbar - und die Stimme kann es vorlesen, was sie bei
+"\pi" nicht kann.
+
+    \[ A = \pi \times r^{{2}} \]           -> A = π × r²
+    $x = \frac{{-b+\sqrt{{b^2-4ac}}}}{{2a}}$  -> x = (-b + √(b² - 4ac))/2a
+    \(H_{{2}}O\) und \(10^{{-3}}\)          -> H₂O und 10⁻³
+
+Die Umrechnung greift VOR Anzeige, Kopieren und Vorlesen - sonst bekaeme
+der Kopierknopf weiter "\pi".
+
+ZWEI FEHLER, die mein eigener Test gefunden hat, bevor sie jemand sah:
+
+  Geldbetraege wurden zerstoert. Die erste Fassung las $...$ als Formel -
+  aus "Kosten $19 bis $25" wurde "Kosten 19 bis25". Jetzt gilt einfaches
+  $...$ nur, wenn wirklich ein Backslash darin steht.
+
+  Verschachteltes blieb halb stehen. Ein \frac, dessen Zaehler ein \sqrt
+  enthaelt, passt beim ersten Durchgang auf kein Muster - die inneren
+  Klammern stehen noch da. Jetzt mehrere Durchgaenge, von innen nach aussen.
+
+================================================================
+2. DIE OBERFLAECHE FRAGTE VIERMAL JE SEKUNDE - MIT setInterval
+================================================================
+
+setInterval feuert weiter, egal ob die vorige Anfrage zurueck ist. Am
+Rechner kostet das nichts. Zum iPad sind es hier 303 ms Umlaufzeit
+(gemessen mit tailscale ping) - vier Anfragen je Sekunde ergeben 1200 ms
+Arbeit je Sekunde. Die Anfragen stapeln sich, der Browser hat nur eine
+Handvoll Verbindungen je Rechner, und alles andere steht dahinter an.
+
+Jetzt eine KETTE: die naechste Anfrage geht erst los, wenn die vorige da
+ist. Stapeln ist unmoeglich. Die Pause ist mindestens das Dreifache der
+gemessenen Umlaufzeit.
+
+    am Rechner          3,8 Anfragen/s   (unveraendert)
+    bei 300 ms Leitung  0,83 statt 4     (250 statt 1200 ms Arbeit/s)
+
+Dazu: im Hintergrundtab wird gar nicht gefragt, bei ausgeschaltetem
+Weckwort nur noch selten.
+
+WICHTIG ZUR EINORDNUNG: das war NICHT die Ursache der gemeldeten Stoerung
+(siehe 3). Es ist trotzdem richtig, und bei euch lohnt es sich genauso.
+
+================================================================
+3. DER ANBIETER WACKELT - MESST HEUTE NICHTS
+================================================================
+
+Gemessen um 12:20, eine simple "Sag hallo"-Anfrage an
+openai/gpt-oss-20b:
+
+    1. 200          16.767 ms
+    2. ReadTimeout  46.544 ms
+    3. ReadTimeout  45.527 ms
+
+Zwei von drei laufen ins Leere, die dritte braucht 17 Sekunden fuer zwei
+Woerter.
+
+Das erklaert auf einen Schlag: "Request timed out." im Fenster (das ist
+der Wortlaut der OpenAI-Bibliothek), "es dauert unwahrscheinlich lange"
+(JARVIS_TIMEOUT steht auf 120 s), und unsere Testreihe, die statt 15
+Minuten 41 gebraucht hat - nachttest 532 s und bildtest 621 s, beide
+warten auf Zeitueberschreitungen.
+
+DESHALB IST DIESES PAKET NUR MIT DEN NETZUNABHAENGIGEN TESTS GEPRUEFT: 35
+von 35 gruen in 303 s. Die volle Reihe kann heute nichts aussagen - sie
+misst die Tagesform von NVIDIA. Spielt es ein, aber lasst die grossen
+Laeufe, bis der Anbieter wieder da ist.
+
+Und ein Vorschlag, den ihr auch bei euch pruefen solltet: JARVIS_TIMEOUT
+von 120 auf 45 Sekunden. Zwei Minuten auf eine Antwort zu warten, die
+nicht kommt, ist nutzlos; nach 45 Sekunden steht ein Satz da, und das
+Ausweichen auf das naechste Modell greift frueher.
+
+================================================================
+4. WAS BEI EUCH ZU TUN IST
+================================================================
+
+  1. Pakete 14, 15, 16 und dieses einspielen (in dieser Reihenfolge).
+  2. Jarvis NEU STARTEN. Bei uns lief der Server seit 15:54, waehrend neun
+     Python-Dateien danach geaendert wurden - die Oberflaeche war aktuell
+     (die kommt bei jedem Aufruf frisch von der Platte), der Python-Stand
+     acht Stunden alt. Das sieht aus wie ein Fehler und ist keiner.
+  3. Grosse Testlaeufe VERSCHIEBEN, bis der Anbieter wieder antwortet.
