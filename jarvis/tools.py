@@ -1282,20 +1282,20 @@ def recall(query: str = "") -> str:
 
 
 def search_conversation(frage: str = "", tage: int = 0) -> str:
-    """Sucht in fruehereren Gespraechen - auch ueber Neustarts hinweg."""
+    """Sucht in früheren Gesprächen und dekomprimiert den vollen Wortlaut."""
     from . import gedaechtnis, verlauf
 
-    treffer = verlauf.suchen(frage, int(tage or 0))
+    treffer, weg = verlauf.suchen_nach_sinn(frage.strip(), int(tage or 0), grenze=6)
     if not treffer:
         wann = f" in den letzten {tage} Tagen" if tage else ""
-        return (f"Zu '{frage}' finde ich nichts{wann}." if frage
-                else f"Keine frueheren Gespraeche{wann}.")
+        return (f"Zu '{frage}' finde ich im bisherigen Verlauf nichts{wann}." if frage
+                else f"Keine früheren Gespräche{wann}.")
     zeilen = []
     for e in treffer:
         wer = "Du" if e["rolle"] == "du" else "Ich"
-        zeilen.append(f"{wer} ({gedaechtnis.wie_lange_her(e['wann'])}): "
-                      f"{e['text'][:160]}")
-    return " || ".join(zeilen)
+        zeilen.append(f"{wer} ({gedaechtnis.wie_lange_her(e['wann'])}):\n{e['text']}")
+    hinweis = f" [Gefunden nach {weg}]" if frage else ""
+    return "\n---\n".join(zeilen) + hinweis
 
 
 def forget(query: str) -> str:

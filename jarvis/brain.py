@@ -236,6 +236,7 @@ class Brain:
         self.client = OpenAI(api_key=config.API_KEY, base_url=config.BASE_URL,
                              timeout=config.REQUEST_TIMEOUT, max_retries=0)
         self.history: list[dict] = []
+        self._zusammenfassung: str = ""
         self._extras = {"reasoning_effort": config.REASONING_EFFORT}
         self.model = config.MODEL
         self.rangliste: list[str] = []      # erreichbare Modelle, bestes zuerst
@@ -440,6 +441,13 @@ class Brain:
         if wissen:
             teile.append("\n" + wissen.format(name=config.USER_NAME))
 
+        # Semantische Komprimierung: Ältere Teile dieses Chats als kompakter Kontext
+        if self._zusammenfassung.strip():
+            teile.append(
+                f"\nFrüherer Verlauf dieses Chats (semantisch komprimiert):\n"
+                f"{self._zusammenfassung.strip()}"
+            )
+
         # Ganz zum Schluss, und bei jeder Runde neu: wird diese Antwort
         # vorgelesen oder gelesen? Davon haengt ab, ob Markdown erwuenscht
         # oder Unsinn ist. Hier statt im Verlauf, sonst stapelte sich der
@@ -480,38 +488,100 @@ class Brain:
         print("\n  [Erfundene Mailanzahl verworfen - kein Zugang eingerichtet]")
         return OHNE_MAILZUGANG
 
+    def _komprimiere_nachrichten(self, nachrichten: list[dict]) -> str:
+        """Fasst einen Block alter Chat-Nachrichten semantisch zusammen."""
+        text_bloecke = []
+        for m in nachrichten:
+            rolle = m.get("role")
+            inhalt = (m.get("content") or "").strip()
+            if rolle in ("user", "assistant") and inhalt:
+                text_bloecke.append(f"{'DU' if rolle == 'user' else 'JARVIS'}: {inhalt}")
+        if not text_bloecke:
+            return ""
+
+        dialog_text = "\n".join(text_bloecke[-12:])
+        # Schnelle Zusammenfassung anfordern
+        try:
+            prompt = (
+                "Fasse die Kerninhalte, Themen und getroffenen Entscheidungen aus "
+                "diesem Chatverlauf in maximal zwei bis drei prägnanten Stichpunkten "
+                "zusammen. Keine Floskeln, nur Fakten und getroffene Absprachen:\n\n"
+                f"{dialog_text}"
+            )
+            resp = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": "Du bist ein präziser Protokollant. Fasse kurz zusammen."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=180,
+                temperature=0.2,
+                timeout=8
+            )
+            ergebnis = (resp.choices[0].message.content or "").strip()
+            if ergebnis:
+                return ergebnis
+        except Exception:
+            pass
+
+        # Deterministischer Fallback, falls API nicht antwortet
+        fragen = [m.get("content", "")[:60] for m in nachrichten if m.get("role") == "user"]
+        return "Themen: " + "; ".join(fragen[:4])
+
     def _trim(self) -> None:
-        """Kurzzeitgedächtnis begrenzen, ohne eine Tool-Kette zu zerreissen."""
+        """Kurzzeitgedächtnis begrenzen, aber Älteres semantisch komprimieren."""
         if len(self.history) <= config.HISTORY_TURNS:
             return
         cut = len(self.history) - config.HISTORY_TURNS
         while cut < len(self.history) and self.history[cut]["role"] in ("tool", "assistant"):
             cut += 1
+
+        abgeschnitten = self.history[:cut]
         self.history = self.history[cut:]
+
+        neue_zfg = self._komprimiere_nachrichten(abgeschnitten)
+        if neue_zfg:
+            if self._zusammenfassung:
+                self._zusammenfassung = f"{self._zusammenfassung}\n{neue_zfg}"
+                # Zusammenfassung selbst kurz halten
+                zeilen = self._zusammenfassung.splitlines()
+                if len(zeilen) > 6:
+                    self._zusammenfassung = "\n".join(zeilen[-6:])
+            else:
+                self._zusammenfassung = neue_zfg
 
     def reset(self) -> None:
         self.history.clear()
+        self._zusammenfassung = ""
         # Ein neuer Chat faengt ohne alte Rechnung an.
         self._offene_forderung = False
 
     def chat_oeffnen(self, kennung: str) -> int:
-        """Auf einen anderen Chat umschalten - mit dessen Vorgeschichte.
+        """Auf einen anderen Chat umschalten - mit komprimierter Vorgeschichte.
 
-        Nur zu leeren waere zu wenig: wer einen alten Chat aufmacht, will
-        darin weiterreden, nicht bei null anfangen. Aus dem Archiv kommen
-        allerdings nur die fertigen Saetze zurueck, keine Werkzeugaufrufe -
-        die sind einzeln ohne Wert und wuerden den Verlauf nur aufblaehen.
+        Aus dem Archiv kommen nur die fertigen Saetze zurueck, keine Werkzeugaufrufe.
+        Aeltere Nachrichten werden semantisch zusammengefasst, die neuesten geladen.
         """
         self.history.clear()
+        self._zusammenfassung = ""
         self._offene_forderung = False
-        # HISTORY_TURNS ist die Grenze, die _trim() ohnehin durchsetzt. Mehr
-        # zu laden hiesse, es gleich danach wieder wegzuwerfen.
-        for eintrag in verlauf.letzte(config.HISTORY_TURNS, chat=kennung):
+
+        alle = verlauf.letzte(60, chat=kennung)
+        if len(alle) > config.HISTORY_TURNS:
+            aeltere = alle[:-config.HISTORY_TURNS]
+            neueste = alle[-config.HISTORY_TURNS:]
+            aeltere_msgs = [{"role": "user" if e["rolle"] == "du" else "assistant",
+                             "content": e["text"]} for e in aeltere]
+            self._zusammenfassung = self._komprimiere_nachrichten(aeltere_msgs)
+            ziel = neueste
+        else:
+            ziel = alle
+
+        for eintrag in ziel:
             self.history.append({
                 "role": "user" if eintrag["rolle"] == "du" else "assistant",
                 "content": eintrag["text"]})
-        # Ein Verlauf, der mit Jarvis' Antwort anfaengt, verwirrt das Modell -
-        # es sieht eine Antwort auf eine Frage, die es nie gab.
+
         while self.history and self.history[0]["role"] != "user":
             self.history.pop(0)
         return len(self.history)
