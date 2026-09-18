@@ -1562,7 +1562,15 @@ async function chatsLaden() {
 
   const ul = $("#chats");
   ul.innerHTML = "";
-  for (const chat of d.chats || []) {
+  const chats = d.chats || [];
+  if (chats.length === 0) {
+    const leer = document.createElement("li");
+    leer.className = "chat-leer";
+    leer.textContent = "Noch keine Chats. Starte eine Unterhaltung, damit sie hier angezeigt wird.";
+    ul.appendChild(leer);
+    return;
+  }
+  for (const chat of chats) {
     const li = document.createElement("li");
     if (chat.aktiv) li.classList.add("an");
 

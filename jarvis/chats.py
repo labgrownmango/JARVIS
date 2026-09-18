@@ -76,13 +76,19 @@ def neu(titel: str = "") -> str:
         return kennung
 
 
-def aktiver() -> str:
-    """Welcher Chat ist offen? Gibt es keinen, wird einer angelegt."""
+def aktiver(anlegen: bool = True) -> str:
+    """Welcher Chat ist offen? Gibt es keinen, wird nur bei anlegen=True einer angelegt."""
     with _schloss:
         stand = _laden()
         kennung = stand.get("aktiv") or ""
         if kennung and any(c["id"] == kennung for c in stand["chats"]):
             return kennung
+        if stand["chats"]:
+            stand["aktiv"] = stand["chats"][0]["id"]
+            _speichern()
+            return stand["aktiv"]
+        if not anlegen:
+            return ""
         return neu()
 
 
@@ -154,7 +160,7 @@ def loeschen(kennung: str) -> int:
         weg = verlauf.chat_loeschen(kennung)
         stand["chats"] = [c for c in stand["chats"] if c["id"] != kennung]
         if stand.get("aktiv") == kennung:
-            stand["aktiv"] = ""
+            stand["aktiv"] = stand["chats"][0]["id"] if stand["chats"] else ""
         _speichern()
         return weg
 

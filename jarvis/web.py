@@ -277,8 +277,9 @@ async def verlauf_lesen(anzahl: int = 30, chat: str = ""):
     """
     from . import chats, verlauf
 
-    return {"eintraege": verlauf.letzte(anzahl, chat=chat),
-            "chat": chat or chats.aktiver()}
+    aktive_kennung = chat or chats.aktiver(anlegen=False)
+    eintraege = verlauf.letzte(anzahl, chat=aktive_kennung) if aktive_kennung else []
+    return {"eintraege": eintraege, "chat": aktive_kennung}
 
 
 @app.post("/api/reset")
@@ -329,7 +330,7 @@ async def _json(request: Request) -> dict:
 async def chats_lesen():
     from . import chats
 
-    return {"chats": chats.liste(), "aktiv": chats.aktiver()}
+    return {"chats": chats.liste(), "aktiv": chats.aktiver(anlegen=False)}
 
 
 @app.post("/api/chats")
@@ -382,12 +383,16 @@ async def chat_loeschen(request: Request):
 
     daten = await _json(request)
     kennung = (daten.get("id") or "").strip()
-    war_aktiv = kennung == chats.aktiver()
+    war_aktiv = kennung == chats.aktiver(anlegen=False)
     weg = chats.loeschen(kennung)
+    neuer_aktiver = chats.aktiver(anlegen=False)
     if war_aktiv:
-        gehirn().reset()
+        if neuer_aktiver:
+            gehirn().chat_oeffnen(neuer_aktiver)
+        else:
+            gehirn().reset()
     protokoll.schreibe("system", f"Chat {kennung} geloescht ({weg} Nachrichten)")
-    return {"ok": True, "geloescht": weg, "aktiv": chats.aktiver()}
+    return {"ok": True, "geloescht": weg, "aktiv": neuer_aktiver}
 
 
 # --- Stimme und Ohren fuer den Browser --------------------------------------

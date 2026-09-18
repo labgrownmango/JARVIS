@@ -171,6 +171,17 @@ nav .zahl {
 #chats li.an { border-left-color: var(--blau); background: var(--flaeche-hell); }
 #chats li.an .chatname { color: var(--blau); }
 
+#chats li.chat-leer {
+  padding: 12px 18px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-leise);
+  opacity: 0.7;
+  font-style: italic;
+  border-left: 2px solid transparent;
+  pointer-events: none;
+}
+
 .chatname {
   flex: 1;
   min-width: 0;
