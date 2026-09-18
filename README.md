@@ -90,7 +90,8 @@ genuegen: `/zei` reicht fuer `/zeit`.
 | `/zeit` `/status` `/standort` | Uhrzeit, Auslastung, Standort |
 | `/wetter [ort] [tage]` | Wetter hier oder anderswo, bis 7 Tage |
 | `/nachrichten [thema]` | Schlagzeilen, optional zu einem Thema |
-| `/code [sprache:] <aufgabe>` | schreibt ein Programm nach `werkstatt/` |
+| `/code [sprache|datei:] <aufgabe>` | schreibt ein Programm nach `werkstatt/` |
+| `/edit <datei>[:] <anweisung>` | bearbeitet ein vorhandenes Skript in `werkstatt/` |
 | `/werkstatt` | öffnet den Ordner mit dem geschriebenen Code |
 | `/oeffne <name>` | startet ein freigegebenes Programm |
 | `/merken <text>` `/gedaechtnis [suche]` | Langzeitgedaechtnis |

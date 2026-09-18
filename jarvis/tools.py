@@ -3140,6 +3140,129 @@ def write_code(aufgabe: str, datei: str = "", sprache: str = "python") -> str:
             f"zusammen und lies ihn nicht vor.")
 
 
+_SICHERE_ENDUNGEN = frozenset({
+    ".py", ".js", ".ts", ".html", ".css", ".ps1", ".bat", ".sh",
+    ".sql", ".json", ".txt", ".md", ".csv", ".yaml", ".yml", ".xml",
+    ".java", ".c", ".cpp", ".cs", ".rs", ".go"
+})
+
+
+def edit_code(datei: str, anweisung: str) -> str:
+    """Bearbeitet ein bestehendes Skript in werkstatt/ anhand einer Anweisung."""
+    from pathlib import Path
+
+    if not datei.strip():
+        return "Welche Datei aus der Werkstatt soll bearbeitet werden?"
+    if not anweisung.strip():
+        return "Was soll an der Datei geändert oder erweitert werden?"
+
+    # Nur Dateiname, kein Verzeichnispfad (Path Traversal verhindern)
+    dateiname = Path(datei.strip()).name
+    if not dateiname or ".." in datei or "/" in datei or "\\" in datei:
+        return "Ungültiger Dateiname: Bearbeitet werden nur Dateien direkt in werkstatt/."
+
+    # Dateiendung prüfen - nur sichere Text- und Code-Endungen
+    endung = Path(dateiname).suffix.lower()
+    if endung not in _SICHERE_ENDUNGEN:
+        return (f"Dateiendung '{endung}' ist nicht erlaubt. Erlaubt sind nur "
+                f"sichere Skript- und Textformate ({', '.join(sorted(_SICHERE_ENDUNGEN))}).")
+
+    config.WERKSTATT.mkdir(parents=True, exist_ok=True)
+    pfad = config.WERKSTATT / dateiname
+    if not pfad.exists():
+        vorhanden = [p.name for p in config.WERKSTATT.iterdir() if p.is_file()]
+        tipp = f" Vorhanden sind: {', '.join(vorhanden)}" if vorhanden else " Die Werkstatt ist noch leer."
+        return f"Datei werkstatt/{dateiname} wurde nicht gefunden.{tipp}"
+
+    try:
+        alter_code = pfad.read_text(encoding="utf-8")
+    except Exception as exc:
+        return f"Datei werkstatt/{dateiname} konnte nicht gelesen werden: {exc}"
+
+    grund = verbote.aufgabe_verstoss(anweisung)
+    if grund:
+        return (f"Diese Änderung mache ich nicht - sie soll {grund}, und das "
+                f"ist auf diesem Rechner abgeschaltet. Sag das in einem Satz.")
+
+    modell = config.CODE_MODELL or _modell()
+    melde(f"bearbeitet {dateiname}")
+
+    prompt_user = (
+        f"Hier ist der bestehende Inhalt der Datei '{dateiname}':\n\n"
+        f"```{endung.lstrip('.')}\n"
+        f"{alter_code}\n"
+        f"```\n\n"
+        f"Änderungsanweisung: {anweisung}\n\n"
+        f"Gib den VOLLSTÄNDIGEN, überarbeiteten Code der Datei aus. "
+        f"Keine Auslassungen, keine Platzhalter, keine Erklärungen."
+    )
+
+    kette = [modell] + [m for m in config.MODELS if m != modell]
+    neuer_code, letzter = "", ""
+    for versuch in kette[:3]:
+        try:
+            r = _http.post(
+                f"{config.BASE_URL}/chat/completions",
+                headers={"Authorization": f"Bearer {config.API_KEY}"},
+                timeout=config.REQUEST_TIMEOUT,
+                json={"model": versuch, "max_tokens": config.CODE_TOKENS,
+                      "temperature": 0.2,
+                      "messages": [
+                          {"role": "system", "content": config.CODE_PROMPT},
+                          {"role": "user", "content": prompt_user}]})
+            if r.status_code == 200:
+                neuer_code = _zaun_entfernen(
+                    (r.json()["choices"][0]["message"].get("content")
+                     or "").strip())
+                if neuer_code.strip():
+                    break
+                letzter = f"{versuch} lieferte nichts"
+                continue
+            grund = r.json().get("title", r.text[:60])
+            letzter = f"{versuch} antwortete {r.status_code} {grund}"
+            if r.status_code not in (429, 503, 504):
+                break
+        except Exception as exc:
+            letzter = f"{versuch}: {type(exc).__name__}"
+
+    if not neuer_code.strip():
+        return f"Code nicht überarbeitet: {letzter or 'kein Modell frei'}"
+
+    grund = verbote.code_verstoss(neuer_code)
+    if grund:
+        return (f"Die geänderte Fassung habe ich verworfen: {grund}. "
+                f"Die Originaldatei werkstatt/{dateiname} bleibt unverändert.")
+
+    # Sicherheitskopie der alten Fassung anlegen
+    backup_pfad = config.WERKSTATT / f"{dateiname}.bak"
+    try:
+        backup_pfad.write_text(alter_code, encoding="utf-8")
+        pfad.write_text(neuer_code + "\n", encoding="utf-8")
+    except Exception as exc:
+        return f"Fehler beim Speichern von werkstatt/{dateiname}: {exc}"
+
+    alte_zeilen = alter_code.count("\n") + 1
+    neue_zeilen = neuer_code.count("\n") + 1
+    diff = neue_zeilen - alte_zeilen
+    diff_text = f"+{diff}" if diff > 0 else str(diff)
+
+    print(f"\n  --- werkstatt/{pfad.name} überarbeitet ({neue_zeilen} Zeilen, {diff_text}) "
+          f"{'-' * max(0, 40 - len(pfad.name))}")
+    print(neuer_code)
+    print(f"  {'-' * 62}\n")
+
+    warnung = _sicherheitspruefung(neuer_code)
+    if warnung:
+        print(f"  ACHTUNG: Dieser Code aendert Dateien ({warnung}) und fragt "
+              f"nicht nach.\n  Vor dem Ausfuehren selbst pruefen.\n")
+        return (f"Überarbeitet: werkstatt/{pfad.name} ({neue_zeilen} Zeilen, Backup: {dateiname}.bak). "
+                f"WARNUNG: Der Code loescht oder verschiebt Dateien ({warnung}). "
+                f"Sag in einem Satz, was geändert wurde.")
+
+    return (f"Überarbeitet: werkstatt/{pfad.name} ({neue_zeilen} Zeilen, Backup in {dateiname}.bak). "
+            f"Fasse die Änderungen in EINEM kurzen Satz zusammen.")
+
+
 # --- Bildschirm ansehen -----------------------------------------------------
 # Zwischenmeldungen an die Oberflaeche. Pro Thread getrennt, sonst wuerden
 # mehrere gleichzeitig laufende Agenten sich gegenseitig ueberschreiben.
@@ -3482,6 +3605,7 @@ REGISTRY = {
     "open_with": open_with,
     "look_at_screen": look_at_screen,
     "write_code": write_code,
+    "edit_code": edit_code,
     "start_agent": start_agent,
     "agenten_status": agenten_status,
     "agent_bericht": agent_bericht,
@@ -3982,6 +4106,17 @@ SCHEMA = [
                      "description": "python, javascript, powershell, html, "
                                     "sql, batch ... Standard python"}},
         ["aufgabe"]),
+    _fn("edit_code",
+        "Bearbeitet oder erweitert ein bereits vorhandenes Skript im Ordner "
+        "werkstatt/. Nimm dieses Werkzeug, wenn ein bestehender Code geändert, "
+        "erweitert, repariert oder angepasst werden soll ('erweitere backup.py um...', "
+        "'bau eine Fehlerbehandlung in script.py ein', 'ändere das Skript X'). "
+        "Liest die alte Fassung ein und speichert die aktualisierte Version mit Backup.",
+        {"datei": {"type": "string",
+                   "description": "Name der vorhandenen Datei in werkstatt/, z.B. 'backup.py'"},
+         "anweisung": {"type": "string",
+                       "description": "Was genau geändert, hinzugefügt oder korrigiert werden soll"}},
+        ["datei", "anweisung"]),
     _fn("start_agent",
         "Uebergibt eine mehrschrittige Aufgabe an einen Hintergrundagenten, "
         "der sie allein erledigt und sich spaeter mit einem Bericht meldet. "

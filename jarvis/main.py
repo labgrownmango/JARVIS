@@ -66,6 +66,7 @@ TOOL_LABELS = {
     "wikipedia": "schlägt nach",
     "look_at_screen": "sieht auf den Bildschirm",
     "write_code": "schreibt Code",
+    "edit_code": "bearbeitet Code",
     "start_agent": "schickt einen Agenten los",
     "agenten_status": "sieht im Hangar nach",
     "agent_bericht": "hört sich den Bericht an",

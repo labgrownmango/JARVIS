@@ -456,16 +456,45 @@ def _stoppen(ctx: Kontext, arg: str) -> str:
 
 
 @befehl("/code", "schreibt ein Programm - ohne Umweg über das Gespräch",
-        "[sprache:] <aufgabe>")
+        "[sprache|datei:] <aufgabe>")
 def _code(ctx: Kontext, arg: str) -> str:
     if not arg.strip():
         return ("Was soll das Programm tun?  Beispiel:\n"
                 "  /code ein Skript, das alte Logdateien loescht\n"
-                "  /code powershell: zeigt die groessten Ordner")
-    sprache, _, rest = arg.partition(":")
-    if rest.strip() and sprache.strip().lower() in tools._ENDUNGEN:
-        return tools.write_code(rest.strip(), sprache=sprache.strip().lower())
+                "  /code powershell: zeigt die groessten Ordner\n"
+                "  /code skript.py: baue eine Fehlerbehandlung ein")
+    teil1, _, rest = arg.partition(":")
+    teil1_sauber = teil1.strip()
+    rest_sauber = rest.strip()
+    if rest_sauber:
+        # Fall 1: Dateiname angegeben (z.B. "tool.py: erweitere um...")
+        datei_pfad = config.WERKSTATT / teil1_sauber
+        hat_sichere_endung = Path(teil1_sauber).suffix.lower() in tools._SICHERE_ENDUNGEN
+        if datei_pfad.exists() or hat_sichere_endung:
+            return tools.edit_code(teil1_sauber, rest_sauber)
+        # Fall 2: Sprache angegeben (z.B. "powershell: zeigt...")
+        if teil1_sauber.lower() in tools._ENDUNGEN:
+            return tools.write_code(rest_sauber, sprache=teil1_sauber.lower())
     return tools.write_code(arg.strip())
+
+
+@befehl("/edit", "bearbeitet ein vorhandenes Skript in werkstatt/",
+        "<datei>[:] <anweisung>")
+def _edit(ctx: Kontext, arg: str) -> str:
+    if not arg.strip():
+        config.WERKSTATT.mkdir(parents=True, exist_ok=True)
+        dateien = sorted(p.name for p in config.WERKSTATT.iterdir() if p.is_file() and not p.name.endswith(".bak"))
+        liste = ", ".join(dateien) if dateien else "Werkstatt ist leer."
+        return ("Welche Datei soll bearbeitet werden?  Beispiel:\n"
+                "  /edit mein_skript.py: baue eine Fortschrittsanzeige ein\n"
+                f"Vorhanden in werkstatt/: {liste}")
+    if ":" in arg:
+        datei, _, anweisung = arg.partition(":")
+    else:
+        teile = arg.strip().split(None, 1)
+        datei = teile[0]
+        anweisung = teile[1] if len(teile) > 1 else ""
+    return tools.edit_code(datei.strip(), anweisung.strip())
 
 
 @befehl("/werkstatt", "öffnet den Ordner mit dem geschriebenen Code")
